@@ -12,9 +12,12 @@ import { useRef, useState } from "react"
 const API_BASE_URL = "https://api.animo.video/v1"
 
 const examplePrompts = [
-  "Draw a red circle and then transform it to right-angled triangle and then from that show the Pythagorean theorem explanation. Make the animation detailed.",
-  "Draw a blue square and then transform it into a rectangle. Show the area calculation for both shapes.",
-  "Create a green equilateral triangle and then morph it into an isosceles triangle. Explain the difference in their properties.",
+  "Draw a red circle, then transform it into a right-angled triangle. Show the Pythagorean theorem explanation with detailed steps, including the derivation of the formula a^2 + b^2 = c^2. Illustrate each step with animations and equations.",
+  "Draw a blue square, then transform it into a rectangle. Show the area calculation for both shapes, including the formulas for area (A = side^2 for square and A = length * width for rectangle). Include detailed steps and animations for each calculation.",
+  "Create a green equilateral triangle, then morph it into an isosceles triangle. Explain the difference in their properties, including side lengths, angles, and area calculations. Show detailed steps and animations for each property comparison.",
+"Draw a yellow pentagon, then transform it into a hexagon. Show the interior angle calculations for both shapes, including the formulas (Interior Angle = (n-2) * 180 / n). Illustrate each step with animations and equations.",
+"Create a purple parallelogram, then morph it into a rhombus. Explain the properties of both shapes, including side lengths, angles, and area calculations. Show detailed steps and animations for each property comparison.",
+"Draw an orange trapezoid, then transform it into a kite. Show the area calculation for both shapes, including the formulas (Area = 1/2 * (base1 + base2) * height for trapezoid and Area = 1/2 * d1 * d2 for kite). Include detailed steps and animations for each calculation."
 ]
 
 interface ProcessStepProps {
@@ -93,7 +96,7 @@ export default function Home() {
     const codeInterval = simulateProgress(1)
 
     try {
-      const modifiedPrompt = prompt + "ONLY RETURN WITH THE CODE, NO EXPLANATION. MAKE THE ANIMATION CODE LIKE WHO 3BLUE2BROWN WOULD MAKE IT. MAKE THE CODE LONGER AND DETAILED. DON'T ADD COMMENTS.";
+      const modifiedPrompt = prompt + "YOU ARE THE BEST MANIM CODE WRITER WITH 30 YRS OF EXPERIENCE. ONLY RETURN WITH THE CODE, NO EXPLANATION. MAKE THE ANIMATION CODE LIKE WHO 3BLUE2BROWN WOULD MAKE IT. MAKE THE CODE LONGER AND DETAILED. DON'T ADD COMMENTS.";
       // Generate code
       const codeResponse = await fetch(`${API_BASE_URL}/code/generation`, {
         method: "POST",
@@ -150,7 +153,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 to-black text-white font-inter">
+    <div className="min-h-screen bg-black text-white font-inter">
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
       
       <div className="relative">
@@ -262,6 +265,41 @@ export default function Home() {
               )}
             </AnimatePresence>
 
+            {/* Video Output */}
+            <AnimatePresence>
+              {videoUrl && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 rounded-2xl overflow-hidden shadow-2xl mb-8">
+                    <CardContent className="p-8">
+                      <h3 className="text-2xl font-semibold text-violet-400 mb-6">Your Animation</h3>
+                      <div className="space-y-6">
+                        <div className="rounded-xl overflow-hidden bg-gray-950 shadow-lg">
+                          <video
+                            ref={videoRef}
+                            src={videoUrl}
+                            className="w-full aspect-video object-cover"
+                            controls
+                          />
+                        </div>
+                        <Button
+                          onClick={() => {
+                            if (videoUrl) window.open(videoUrl, '_blank')
+                          }}
+                          className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-4 px-6 rounded-xl transition-all duration-200"
+                        >
+                          <Download className="mr-2 h-5 w-5" /> Download Animation
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Code Output */}
             <AnimatePresence>
               {code && (
@@ -303,41 +341,6 @@ export default function Home() {
                     <AlertCircle className="h-5 w-5" />
                     <AlertDescription className="ml-2">{error}</AlertDescription>
                   </Alert>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Video Output */}
-            <AnimatePresence>
-              {videoUrl && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                >
-                  <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
-                    <CardContent className="p-8">
-                      <h3 className="text-2xl font-semibold text-violet-400 mb-6">Your Animation</h3>
-                      <div className="space-y-6">
-                        <div className="rounded-xl overflow-hidden bg-gray-950 shadow-lg">
-                          <video
-                            ref={videoRef}
-                            src={videoUrl}
-                            className="w-full aspect-video object-cover"
-                            controls
-                          />
-                        </div>
-                        <Button
-                          onClick={() => {
-                            if (videoUrl) window.open(videoUrl, '_blank')
-                          }}
-                          className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-4 px-6 rounded-xl transition-all duration-200"
-                        >
-                          <Download className="mr-2 h-5 w-5" /> Download Animation
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
                 </motion.div>
               )}
             </AnimatePresence>
