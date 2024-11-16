@@ -1,100 +1,225 @@
-import Image from "next/image";
+"use client"
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { AlertCircle, ArrowRight, Code, Download, Github, Play } from "lucide-react";
+import { useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [videoUrl, setVideoUrl] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [activeTab, setActiveTab] = useState("create");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const features = [
+    {
+      title: "Natural Language Input",
+      description: "Describe your math animations in plain English - no coding required",
+      icon: Code
+    },
+    {
+      title: "Instant Generation",
+      description: "Get your custom math animations in seconds using GPT-4",
+      icon: Play
+    },
+    {
+      title: "Easy Downloads",
+      description: "Download and share your animations in popular video formats",
+      icon: Download
+    }
+  ];
+
+  const handleSubmit = async () => {
+    setError(null);
+    setVideoUrl(null);
+    setLoading(true);
+
+    try {
+      // API calls remain the same as in original code
+      const codeResponse = await fetch("https://api.animo.video/v1/code/generation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: query, model: "gpt-4o" }),
+      });
+
+      if (!codeResponse.ok) throw new Error("Failed to generate code. Please try again.");
+
+      const codeData = await codeResponse.json();
+      const pythonCode = codeData.code.replace(/```python|```/g, "").trim();
+
+      const renderResponse = await fetch("https://api.animo.video/v1/video/rendering", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: pythonCode,
+          file_name: "GenScene.py",
+          file_class: "GenScene",
+          iteration: 55489,
+          project_name: "GenScene",
+        }),
+      });
+
+      if (!renderResponse.ok) throw new Error("Failed to render video. Please try again.");
+
+      const renderData = await renderResponse.json();
+      setVideoUrl(renderData.video_url);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const ExamplePrompts = [
+    "Show the quadratic formula derivation step by step",
+    "Visualize the unit circle and trigonometric functions",
+    "Demonstrate the Pythagorean theorem proof"
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      {/* Header */}
+      <header className="border-b bg-white/50 backdrop-blur-sm fixed w-full z-10">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              MathAnimationGPT
+            </h1>
+            <Badge variant="secondary">Beta</Badge>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm">
+              <Github className="w-4 h-4 mr-2" />
+              GitHub
+            </Button>
+            <Button size="sm">Get Started</Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 pt-24 pb-12">
+        {/* Hero Section */}
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <h2 className="text-4xl font-bold mb-4">
+            Create Beautiful Math Animations with AI
+          </h2>
+          <p className="text-gray-600 text-lg mb-8">
+            Transform your mathematical concepts into engaging animations using natural language. 
+            Perfect for educators, students, and math enthusiasts.
+          </p>
+        </div>
+
+        {/* Main Interface */}
+        <div className="max-w-4xl mx-auto">
+          <Tabs defaultValue="create" className="mb-8">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="create">Create Animation</TabsTrigger>
+              <TabsTrigger value="examples">Example Prompts</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="create">
+              <Card>
+                <CardContent className="pt-6">
+                  <Textarea
+                    placeholder="Describe your math animation in detail (e.g., 'Show a step-by-step visualization of solving the quadratic equation x² + 2x + 1 = 0')"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    className="mb-4 min-h-[120px]"
+                  />
+                  <Button 
+                    onClick={handleSubmit} 
+                    disabled={loading || !query} 
+                    className="w-full"
+                  >
+                    {loading ? (
+                      "Generating Animation..."
+                    ) : (
+                      <>
+                        Generate Animation
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="examples">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="grid gap-4">
+                    {ExamplePrompts.map((prompt, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        className="justify-start h-auto py-4 px-4"
+                        onClick={() => {
+                          setQuery(prompt);
+                          setActiveTab("create");
+                        }}
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        {prompt}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          {/* Error Display */}
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Video Display */}
+          {videoUrl && (
+            <Card className="overflow-hidden">
+              <CardContent className="p-0">
+                <video src={videoUrl} controls className="w-full" />
+                <div className="p-4 border-t bg-gray-50">
+                  <Button asChild variant="outline" className="w-full">
+                    <a href={videoUrl} download>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download Animation
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Features Section */}
+        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-16">
+          {features.map((feature, index) => (
+            <Card key={index}>
+              <CardContent className="pt-6">
+                <feature.icon className="h-8 w-8 mb-4 text-blue-600" />
+                <h3 className="font-semibold mb-2">{feature.title}</h3>
+                <p className="text-gray-600 text-sm">{feature.description}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      {/* Footer */}
+      <footer className="border-t bg-white">
+        <div className="container mx-auto px-4 py-6 text-center text-gray-600 text-sm">
+          © 2024 MathAnimationGPT. All rights reserved.
+        </div>
       </footer>
     </div>
   );
