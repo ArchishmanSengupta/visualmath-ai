@@ -1,226 +1,349 @@
 "use client"
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle, ArrowRight, Code, Download, Github, Play } from "lucide-react";
-import { useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Textarea } from "@/components/ui/textarea"
+import { AnimatePresence, motion } from "framer-motion"
+import { AlertCircle, ArrowRight, Clipboard, Code2, Download, Loader, Sparkles, Video } from "lucide-react"
+import { useRef, useState } from "react"
+
+const API_BASE_URL = "https://api.animo.video/v1"
+
+const examplePrompts = [
+  "Draw a red circle and then transform it to right-angled triangle and then from that show the Pythagorean theorem explanation. Make the animation detailed.",
+  "Draw a blue square and then transform it into a rectangle. Show the area calculation for both shapes.",
+  "Create a green equilateral triangle and then morph it into an isosceles triangle. Explain the difference in their properties.",
+]
+
+interface ProcessStepProps {
+  icon: React.ComponentType<{ className?: string }>
+  title: string
+  description: string
+  isActive: boolean
+  isComplete: boolean
+}
+
+const ProcessStep = ({ icon: Icon, title, description, isActive, isComplete }: ProcessStepProps) => (
+  <div className={`flex items-center gap-4 p-4 rounded-lg transition-colors duration-200 ${
+    isActive ? 'bg-violet-500/10 border border-violet-500/20' : 
+    isComplete ? 'bg-gray-800/20 border border-gray-700' : 
+    'bg-gray-900/50 border border-gray-800'
+  }`}>
+    <div className={`p-2 rounded-full ${
+      isActive ? 'bg-violet-500 text-white' :
+      isComplete ? 'bg-gray-700 text-gray-300' :
+      'bg-gray-800 text-gray-500'
+    }`}>
+      <Icon className="h-5 w-5" />
+    </div>
+    <div>
+      <h4 className={`font-medium ${
+        isActive ? 'text-violet-400' :
+        isComplete ? 'text-gray-300' :
+        'text-gray-500'
+      }`}>{title}</h4>
+      <p className="text-sm text-gray-500">{description}</p>
+    </div>
+  </div>
+)
 
 export default function Home() {
-  const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [videoUrl, setVideoUrl] = useState(null);
-  const [error, setError] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [activeTab, setActiveTab] = useState("create");
+  const [prompt, setPrompt] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [currentStep, setCurrentStep] = useState(0) // 0: not started, 1: generating code, 2: rendering video
+  const [progress, setProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const [videoUrl, setVideoUrl] = useState(null)
+  const [code, setCode] = useState("")
+  const [copied, setCopied] = useState(false)
+  const videoRef = useRef(null)
 
-  const features = [
-    {
-      title: "Natural Language Input",
-      description: "Describe your math animations in plain English - no coding required",
-      icon: Code
-    },
-    {
-      title: "Instant Generation",
-      description: "Get your custom math animations in seconds using GPT-4",
-      icon: Play
-    },
-    {
-      title: "Easy Downloads",
-      description: "Download and share your animations in popular video formats",
-      icon: Download
-    }
-  ];
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
-  const handleSubmit = async () => {
-    setError(null);
-    setVideoUrl(null);
-    setLoading(true);
+  interface SimulateProgress {
+    (step: number): NodeJS.Timeout
+  }
+
+  const simulateProgress: SimulateProgress = (step) => {
+    setProgress(0)
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval)
+          return 100
+        }
+        return prev + 1
+      })
+    }, step === 1 ? 100 : 100) // Faster for code generation, slower for video rendering
+    return interval
+  }
+
+  const generateAnimation = async () => {
+    setLoading(true)
+    setCurrentStep(1)
+    setError(null)
+    setVideoUrl(null)
+    
+    const codeInterval = simulateProgress(1)
 
     try {
-      // API calls remain the same as in original code
-      const codeResponse = await fetch("https://api.animo.video/v1/code/generation", {
+      const modifiedPrompt = prompt + "ONLY RETURN WITH THE CODE, NO EXPLANATION. MAKE THE ANIMATION CODE LIKE WHO 3BLUE2BROWN WOULD MAKE IT. MAKE THE CODE LONGER AND DETAILED. DON'T ADD COMMENTS.";
+      // Generate code
+      const codeResponse = await fetch(`${API_BASE_URL}/code/generation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: query, model: "gpt-4o" }),
-      });
+        body: JSON.stringify({ prompt: modifiedPrompt, model: "gpt-4" }),
+      })
 
-      if (!codeResponse.ok) throw new Error("Failed to generate code. Please try again.");
+      if (!codeResponse.ok) {
+        throw new Error("Failed to generate code. Please try again.")
+      }
 
-      const codeData = await codeResponse.json();
-      const pythonCode = codeData.code.replace(/```python|```/g, "").trim();
+      clearInterval(codeInterval)
+      setProgress(100)
+      
+      const codeData = await codeResponse.json()
+      const pythonCode = codeData.code.replace(/```python|```/g, "").trim()
+      setCode(pythonCode)
 
-      const renderResponse = await fetch("https://api.animo.video/v1/video/rendering", {
+      // Short delay to show completion of code generation
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Start video rendering
+      setCurrentStep(2)
+      setProgress(0)
+      const videoInterval = simulateProgress(2)
+
+      const renderResponse = await fetch(`${API_BASE_URL}/video/rendering`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code: pythonCode,
           file_name: "GenScene.py",
           file_class: "GenScene",
-          iteration: 55489,
+          iteration: 585337 + Math.floor(Math.random() * 1000),
           project_name: "GenScene",
         }),
-      });
+      })
 
-      if (!renderResponse.ok) throw new Error("Failed to render video. Please try again.");
+      if (!renderResponse.ok) {
+        throw new Error("Failed to render video. Please try again.")
+      }
 
-      const renderData = await renderResponse.json();
-      setVideoUrl(renderData.video_url);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      clearInterval(videoInterval)
+      setProgress(100)
+
+      const renderData = await renderResponse.json()
+      setVideoUrl(renderData.video_url)
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
-
-  const ExamplePrompts = [
-    "Show the quadratic formula derivation step by step",
-    "Visualize the unit circle and trigonometric functions",
-    "Demonstrate the Pythagorean theorem proof"
-  ];
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      {/* Header */}
-      <header className="border-b bg-white/50 backdrop-blur-sm fixed w-full z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              MathAnimationGPT
-            </h1>
-            <Badge variant="secondary">Beta</Badge>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm">
-              <Github className="w-4 h-4 mr-2" />
-              GitHub
+    <div className="min-h-screen bg-gradient-to-b from-gray-950 to-black text-white font-inter">
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+      
+      <div className="relative">
+        <div className="container mx-auto px-4 pt-12">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-16">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 flex items-center justify-center">
+                <Sparkles className="h-6 w-6 text-white" />
+              </div>
+              <h1 className="text-2xl font-semibold">VisualMath AI</h1>
+            </div>
+            <Button variant="ghost" className="text-gray-400 hover:text-white">
+              Documentation
             </Button>
-            <Button size="sm">Get Started</Button>
+          </div>
+
+          {/* Hero Section */}
+          <div className="text-center mb-20">
+            <h2 className="text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-indigo-500">
+              English to Math Animations
+            </h2>
+            <p className="text-gray-400 text-xl max-w-2xl mx-auto">
+              Math Animations are hard. This AI powered website makes it easy for you.
+            </p>
+          </div>
+
+          {/* Main Content */}
+          <div className="max-w-4xl mx-auto">
+            {/* Example Prompts */}
+            <div className="mb-8 flex flex-wrap gap-3 justify-center">
+              {examplePrompts.map((examplePrompt, index) => (
+                <Button
+                  key={index}
+                  variant="ghost"
+                  className="bg-gray-900/50 hover:bg-gray-800/50 border border-gray-800 text-sm px-4 py-2 rounded-xl transition-all duration-200"
+                  onClick={() => setPrompt(examplePrompt)}
+                >
+                  Example {index + 1}
+                </Button>
+              ))}
+            </div>
+
+            {/* Input Card */}
+            <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 mb-8 rounded-2xl overflow-hidden shadow-2xl">
+              <CardContent className="p-8">
+                <Textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Describe the mathematical concept you want to visualize..."
+                  className="bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 mb-6 p-4 rounded-xl min-h-[120px] resize-none focus:ring-2 focus:ring-violet-500 transition-all duration-200 text-lg"
+                  disabled={loading}
+                />
+                <Button
+                  onClick={generateAnimation}
+                  disabled={loading || !prompt}
+                  className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-6 rounded-xl transition-all duration-200 text-lg font-medium"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <Loader className="h-5 w-5 animate-spin" />
+                      <span>Processing...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-3">
+                      <span>Generate Animation</span>
+                      <ArrowRight className="h-5 w-5" />
+                    </div>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Process Steps */}
+            <AnimatePresence>
+              {loading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="mb-8 space-y-4"
+                >
+                  <ProcessStep
+                    icon={Code2}
+                    title="Generating Python Code"
+                    description="Creating the animation script..."
+                    isActive={currentStep === 1}
+                    isComplete={currentStep > 1}
+                  />
+                  {(currentStep === 1 || code) && (
+                    <div className="px-4">
+                      <Progress value={currentStep === 1 ? progress : 100} className="h-2" />
+                    </div>
+                  )}
+                  
+                  <ProcessStep
+                    icon={Video}
+                    title="Rendering Animation"
+                    description="Converting code into video..."
+                    isActive={currentStep === 2}
+                    isComplete={videoUrl !== null}
+                  />
+                  {currentStep === 2 && (
+                    <div className="px-4">
+                      <Progress value={progress} className="h-2" />
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Code Output */}
+            <AnimatePresence>
+              {code && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 mb-8 rounded-2xl overflow-hidden shadow-2xl">
+                    <CardContent className="p-8">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-xl font-semibold text-violet-400">Generated Python Code</h3>
+                        <Button
+                          onClick={handleCopy}
+                          variant="ghost"
+                          className="hover:bg-gray-800/50 text-gray-400 hover:text-white"
+                        >
+                          {copied ? "Copied!" : <Clipboard className="h-5 w-5" />}
+                        </Button>
+                      </div>
+                      <div className="bg-gray-950 rounded-xl p-6 overflow-x-auto">
+                        <pre className="text-gray-300 font-mono text-sm">{code}</pre>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Error Alert */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  <Alert variant="destructive" className="mb-8 bg-red-950/50 border-red-900/50 text-red-300 rounded-xl backdrop-blur-xl">
+                    <AlertCircle className="h-5 w-5" />
+                    <AlertDescription className="ml-2">{error}</AlertDescription>
+                  </Alert>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Video Output */}
+            <AnimatePresence>
+              {videoUrl && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
+                    <CardContent className="p-8">
+                      <h3 className="text-2xl font-semibold text-violet-400 mb-6">Your Animation</h3>
+                      <div className="space-y-6">
+                        <div className="rounded-xl overflow-hidden bg-gray-950 shadow-lg">
+                          <video
+                            ref={videoRef}
+                            src={videoUrl}
+                            className="w-full aspect-video object-cover"
+                            controls
+                          />
+                        </div>
+                        <Button
+                          onClick={() => {
+                            if (videoUrl) window.open(videoUrl, '_blank')
+                          }}
+                          className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-4 px-6 rounded-xl transition-all duration-200"
+                        >
+                          <Download className="mr-2 h-5 w-5" /> Download Animation
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 pt-24 pb-12">
-        {/* Hero Section */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-4xl font-bold mb-4">
-            Create Beautiful Math Animations with AI
-          </h2>
-          <p className="text-gray-600 text-lg mb-8">
-            Transform your mathematical concepts into engaging animations using natural language. 
-            Perfect for educators, students, and math enthusiasts.
-          </p>
-        </div>
-
-        {/* Main Interface */}
-        <div className="max-w-4xl mx-auto">
-          <Tabs defaultValue="create" className="mb-8">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="create">Create Animation</TabsTrigger>
-              <TabsTrigger value="examples">Example Prompts</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="create">
-              <Card>
-                <CardContent className="pt-6">
-                  <Textarea
-                    placeholder="Describe your math animation in detail (e.g., 'Show a step-by-step visualization of solving the quadratic equation x² + 2x + 1 = 0')"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="mb-4 min-h-[120px]"
-                  />
-                  <Button 
-                    onClick={handleSubmit} 
-                    disabled={loading || !query} 
-                    className="w-full"
-                  >
-                    {loading ? (
-                      "Generating Animation..."
-                    ) : (
-                      <>
-                        Generate Animation
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="examples">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="grid gap-4">
-                    {ExamplePrompts.map((prompt, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        className="justify-start h-auto py-4 px-4"
-                        onClick={() => {
-                          setQuery(prompt);
-                          setActiveTab("create");
-                        }}
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        {prompt}
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-
-          {/* Error Display */}
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Video Display */}
-          {videoUrl && (
-            <Card className="overflow-hidden">
-              <CardContent className="p-0">
-                <video src={videoUrl} controls className="w-full" />
-                <div className="p-4 border-t bg-gray-50">
-                  <Button asChild variant="outline" className="w-full">
-                    <a href={videoUrl} download>
-                      <Download className="mr-2 h-4 w-4" />
-                      Download Animation
-                    </a>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Features Section */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-16">
-          {features.map((feature, index) => (
-            <Card key={index}>
-              <CardContent className="pt-6">
-                <feature.icon className="h-8 w-8 mb-4 text-blue-600" />
-                <h3 className="font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-600 text-sm">{feature.description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t bg-white">
-        <div className="container mx-auto px-4 py-6 text-center text-gray-600 text-sm">
-          © 2024 MathAnimationGPT. All rights reserved.
-        </div>
-      </footer>
+      </div>
     </div>
-  );
+  )
 }
