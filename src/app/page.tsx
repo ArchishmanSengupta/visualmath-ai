@@ -159,7 +159,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white font-inter">
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+      <div className="absolute inset-0] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
       
       <div className="relative">
         <div className="container mx-auto px-4 pt-12">
