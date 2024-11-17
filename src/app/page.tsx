@@ -227,49 +227,75 @@ export default function Home() {
 
   // Main generation function
   const generateAnimation = async () => {
-    setLoading(true)
-    setCurrentStep(1)
-    setError(null)
-    setVideoUrl(null)
-
-    const codeInterval = simulateProgress(1)
-
+    setLoading(true);
+    setCurrentStep(1);
+    setError(null);
+    setVideoUrl(null);
+  
+    const codeInterval = simulateProgress(1);
+  
     try {
-      const response = await fetch('/api/generateAnimation', {
+      // Prepare the prompt
+      const firstPrompt =
+        "Generate detailed and extensive Manim code based on the following user query. Do not include any comments or explanations in the code. User query: ";
+      const modifiedPrompt = firstPrompt + prompt;
+  
+      // First API call to generate code
+      const codeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/code/generation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to generate animation. Please try again.')
+        body: JSON.stringify({ prompt: modifiedPrompt, model: 'gpt-4o' }),
+      });
+  
+      if (!codeResponse.ok) {
+        throw new Error('Failed to generate code. Please try again.');
       }
-
-      clearInterval(codeInterval)
-      setProgress(100)
-
-      const data = await response.json()
-
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      setCurrentStep(2)
-      setProgress(0)
-      const videoInterval = simulateProgress(2)
-
-      if (!data.videoUrl) {
-        throw new Error('No video URL received from the server.')
+  
+      clearInterval(codeInterval);
+      setProgress(100);
+  
+      const codeData = await codeResponse.json();
+      const pythonCode = codeData.code.replace(/```python|```/g, '').trim();
+  
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay for UX
+  
+      setCurrentStep(2);
+      setProgress(0);
+      const videoInterval = simulateProgress(2);
+  
+      // Second API call to render video
+      const renderResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/video/rendering`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: pythonCode,
+          file_name: 'GenScene.py',
+          file_class: 'GenScene',
+          iteration: 585337 + Math.floor(Math.random() * 1000),
+          project_name: 'GenScene',
+        }),
+      });
+  
+      if (!renderResponse.ok) {
+        throw new Error('Failed to render video. Please try again.');
       }
-
-      clearInterval(videoInterval)
-      setProgress(100)
-      setVideoUrl(data.videoUrl)
-
+  
+      const renderData = await renderResponse.json();
+  
+      if (!renderData.video_url) {
+        throw new Error('No video URL received from the server.');
+      }
+  
+      clearInterval(videoInterval);
+      setProgress(100);
+      setVideoUrl(renderData.video_url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+  
 
   return (
     <div className="min-h-screen bg-black text-white font-inter relative overflow-hidden">
