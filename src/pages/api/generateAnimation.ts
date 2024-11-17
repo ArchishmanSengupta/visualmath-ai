@@ -1,6 +1,9 @@
 import Cors from 'cors';
 import { NextApiRequest, NextApiResponse } from 'next';
 
+export const config = {
+  maxDuration: 900,
+};
 const cors = Cors({
   methods: ['POST'],
   origin: process.env.NEXT_PUBLIC_FRONTEND_URL,
