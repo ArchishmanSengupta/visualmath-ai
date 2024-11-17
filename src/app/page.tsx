@@ -234,6 +234,10 @@ export default function Home() {
   
     const codeInterval = simulateProgress(1);
   
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out')), 60000)
+    );
+  
     try {
       // Prepare the prompt
       const firstPrompt =
@@ -241,11 +245,14 @@ export default function Home() {
       const modifiedPrompt = firstPrompt + prompt;
   
       // First API call to generate code
-      const codeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/code/generation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: modifiedPrompt, model: 'gpt-4o' }),
-      });
+      const codeResponse = await Promise.race([
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/code/generation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: modifiedPrompt, model: 'gpt-4o' }),
+        }),
+        timeout,
+      ]) as Response;
   
       if (!codeResponse.ok) {
         throw new Error('Failed to generate code. Please try again.');
@@ -264,17 +271,20 @@ export default function Home() {
       const videoInterval = simulateProgress(2);
   
       // Second API call to render video
-      const renderResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/video/rendering`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: pythonCode,
-          file_name: 'GenScene.py',
-          file_class: 'GenScene',
-          iteration: 585337 + Math.floor(Math.random() * 1000),
-          project_name: 'GenScene',
+      const renderResponse = await Promise.race([
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/video/rendering`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: pythonCode,
+            file_name: 'GenScene.py',
+            file_class: 'GenScene',
+            iteration: 585337 + Math.floor(Math.random() * 1000),
+            project_name: 'GenScene',
+          }),
         }),
-      });
+        timeout,
+      ]) as Response;
   
       if (!renderResponse.ok) {
         throw new Error('Failed to render video. Please try again.');
@@ -290,11 +300,16 @@ export default function Home() {
       setProgress(100);
       setVideoUrl(renderData.video_url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      if (err instanceof Error && err.message === 'Request timed out') {
+        setError('Thanks for loving visualmath ai so much. We got 4500+ queries in 2hrs. We have hit API limits, we are now broke');
+      } else {
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }
   };
+  
   
 
   return (
@@ -427,6 +442,9 @@ export default function Home() {
               <Alert variant="destructive" className="mb-8 bg-red-950/50 border-red-900/50 text-red-300 rounded-xl backdrop-blur-xl">
                 <AlertCircle className="h-5 w-5" />
                 <AlertDescription className="ml-2">{error}</AlertDescription>
+                {error === 'Thanks for loving visualmath ai so much. We got 4500+ queries in 2hrs. We have hit API limits, we are now broke' && (
+                  <img src="https://gifdb.com/images/high/al-bundy-i-m-broke-i-have-no-money-qupzb8ixcx6w4xxl.webp" alt="Broke" className="mt-4 rounded-lg" />
+                )}
               </Alert>
             )}
           </div>
