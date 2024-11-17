@@ -1,33 +1,36 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import Cors from 'cors';
+import { NextApiRequest, NextApiResponse } from 'next';
 
-interface GenerateAnimationRequest extends NextApiRequest {
-  body: {
-    prompt: string;
-  };
+const cors = Cors({
+  methods: ['POST'],
+  origin: process.env.NEXT_PUBLIC_FRONTEND_URL,
+});
+
+function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: (req: NextApiRequest, res: NextApiResponse, callback: (result: unknown) => void) => void) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result: unknown) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
 }
 
-interface GenerateAnimationResponse {
-  videoUrl: string;
-  code: string;
-}
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  await runMiddleware(req, res, cors);
 
-interface ErrorResponse {
-  error: string;
-}
-
-export default async function handler(
-  req: GenerateAnimationRequest,
-  res: NextApiResponse<GenerateAnimationResponse | ErrorResponse>
-) {
   if (req.method === 'POST') {
     const { prompt } = req.body;
 
     const modifiedPrompt = "YOU ARE THE BEST MANIM CODER WITH 30 YRS OF EXPERIENCE. MAKE THE MANIM CODE LONGER AND DETAILED. DON'T ADD COMMENTS. ONLY RETURN WITH THE CODE, NO COMMENTARY FROM THIS USER QUERY: " + prompt;
 
     try {
-      const codeResponse = await fetch(`https://api.animo.video/v1/code/generation`, {
+      const codeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/code/generation`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ prompt: modifiedPrompt, model: "gpt-4o" }),
       });
 
@@ -38,9 +41,11 @@ export default async function handler(
       const codeData = await codeResponse.json();
       const pythonCode = codeData.code.replace(/```python|```/g, "").trim();
 
-      const renderResponse = await fetch(`https://api.animo.video/v1/video/rendering`, {
+      const renderResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/video/rendering`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           code: pythonCode,
           file_name: "GenScene.py",
@@ -62,7 +67,8 @@ export default async function handler(
 
       res.status(200).json({ videoUrl: renderData.video_url, code: pythonCode });
     } catch (err) {
-      res.status(500).json({ error: (err as Error).message });
+      console.error(err); // Log the error for debugging
+      res.status(500).json({ error: err instanceof Error ? err.message : 'An unknown error occurred' });
     }
   } else {
     res.setHeader('Allow', ['POST']);

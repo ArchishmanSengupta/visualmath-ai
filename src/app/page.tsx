@@ -8,8 +8,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { AlertCircle, ArrowRight, Code2, Download, Loader, Sparkles, Video } from "lucide-react"
 import { useRef, useState } from "react"
 
-const API_BASE_URL = "https://api.animo.video/v1"
-
 const examplePrompts = [
     "red rotating 3d cube",
     "sine wave with amplitude 1 and frequency 2",
@@ -25,8 +23,8 @@ interface ProcessStepProps {
 
 const ProcessStep = ({ icon: Icon, title, description, isActive, isComplete }: ProcessStepProps) => (
   <div className={`flex items-center gap-4 p-4 rounded-lg transition-colors duration-200 ${
-    isActive ? 'bg-violet-500/10 border border-violet-500/20' : 
-    isComplete ? 'bg-gray-800/20 border border-gray-700' : 
+    isActive ? 'bg-violet-500/10 border border-violet-500/20' :
+    isComplete ? 'bg-gray-800/20 border border-gray-700' :
     'bg-gray-900/50 border border-gray-800'
   }`}>
     <div className={`p-2 rounded-full ${
@@ -50,8 +48,8 @@ const ProcessStep = ({ icon: Icon, title, description, isActive, isComplete }: P
 const FadeInOut: React.FC<{ show: boolean, children: React.ReactNode }> = ({ show, children }) => (
   <div
     className={`transition-all duration-300 ${
-      show 
-        ? 'opacity-100 transform translate-y-0' 
+      show
+        ? 'opacity-100 transform translate-y-0'
         : 'opacity-0 transform translate-y-5 pointer-events-none'
     }`}
   >
@@ -92,63 +90,43 @@ export default function Home() {
     setCurrentStep(1)
     setError(null)
     setVideoUrl(null)
-    
+
     const codeInterval = simulateProgress(1)
 
     try {
-      const modifiedPrompt = "YOU ARE THE BEST MANIM CODER WITH 30 YRS OF EXPERIENCE. MAKE THE MANIM CODE LONGER AND DETAILED. DON'T ADD COMMENTS. ONLY RETURN WITH THE CODE, NO COMMENTARY FROM THIS USER QUERY: " + prompt;
-      
-      const codeResponse = await fetch(`${API_BASE_URL}/code/generation`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: modifiedPrompt, model: "gpt-4o" }),
-      })
+      const response = await fetch('/api/generateAnimation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
 
-      if (!codeResponse.ok) {
-        throw new Error("Failed to generate code. Please try again.")
+      if (!response.ok) {
+        throw new Error('Failed to generate animation. Please try again.');
       }
 
       clearInterval(codeInterval)
       setProgress(100)
-      
-      const codeData = await codeResponse.json()
-      const pythonCode = codeData.code.replace(/```python|```/g, "").trim()
-      setCode(pythonCode)
 
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
+      const data = await response.json();
+      const pythonCode = data.code;
+      setCode(pythonCode);
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       setCurrentStep(2)
       setProgress(0)
       const videoInterval = simulateProgress(2)
 
-      const renderResponse = await fetch(`${API_BASE_URL}/video/rendering`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code: pythonCode,
-          file_name: "GenScene.py",
-          file_class: "GenScene",
-          iteration: 585337 + Math.floor(Math.random() * 1000),
-          project_name: "GenScene",
-        }),
-      })
-
-      if (!renderResponse.ok) {
-        throw new Error("Failed to render video. Please try again.")
-      }
-
-      const renderData = await renderResponse.json()
-      
-      if (!renderData.video_url) {
-        throw new Error("No video URL received from the server.")
+      if (!data.videoUrl) {
+        throw new Error('No video URL received from the server.');
       }
 
       clearInterval(videoInterval)
       setProgress(100)
-      setVideoUrl(renderData.video_url)
+      setVideoUrl(data.videoUrl)
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred")
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {
       setLoading(false)
     }
@@ -157,7 +135,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-black text-white font-inter relative">
       <div className="absolute inset-0 bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
-      
+
       <div className="relative">
         <div className="container mx-auto px-4 pt-12">
           <div className="flex items-center justify-between mb-16">
@@ -244,7 +222,7 @@ export default function Home() {
                     <Progress value={currentStep === 1 ? progress : 100} className="h-2" />
                   </div>
                 )}
-                
+
                 <ProcessStep
                   icon={Video}
                   title="Rendering Animation"
@@ -261,7 +239,7 @@ export default function Home() {
             </FadeInOut>
 
             <FadeInOut show={!!videoUrl && !loading}>
-              <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 rounded-2xl overflow-hidden shadow-2xl mb-8">
+              <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 rounded-2xl overflow-hidden shadow-2xl mb-4">
                 <CardContent className="p-8">
                   <h3 className="text-2xl font-semibold text-violet-400 mb-6">Your Animation is ready! 🎉</h3>
                   <div className="space-y-6">
