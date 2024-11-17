@@ -23,7 +23,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     const { prompt } = req.body;
 
-    const modifiedPrompt = "YOU ARE THE BEST MANIM CODER WITH 30 YRS OF EXPERIENCE. MAKE THE MANIM CODE LONGER AND DETAILED. DON'T ADD COMMENTS. ONLY RETURN WITH THE CODE, NO COMMENTARY FROM THIS USER QUERY: " + prompt;
+    const firstPrompt = "Generate detailed and extensive Manim code based on the following user query. Do not include any comments or explanations in the code. User query: ";
+
+    const modifiedPrompt = firstPrompt + prompt;
 
     try {
       const codeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/code/generation`, {
