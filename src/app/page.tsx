@@ -65,14 +65,9 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [videoUrl, setVideoUrl] = useState(null)
   const [code, setCode] = useState("")
-  const [copied, setCopied] = useState(false)
+  // const [copied, setCopied] = useState(false)
   const videoRef = useRef(null)
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   interface SimulateProgress {
     (step: number): NodeJS.Timeout
