@@ -28,6 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const modifiedPrompt = firstPrompt + prompt;
 
     try {
+      console.log('Starting code generation');
       const codeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/code/generation`, {
         method: "POST",
         headers: {
@@ -43,6 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const codeData = await codeResponse.json();
       const pythonCode = codeData.code.replace(/```python|```/g, "").trim();
 
+      console.log('Starting video rendering');
       const renderResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/video/rendering`, {
         method: "POST",
         headers: {
