@@ -235,7 +235,7 @@ export default function Home() {
     const codeInterval = simulateProgress(1);
   
     const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Request timed out')), 60000)
+      setTimeout(() => reject(new Error('Request timed out')), 300000)
     );
   
     try {
