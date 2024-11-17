@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
+import { Analytics } from "@vercel/analytics/react"
 import { AlertCircle, ArrowRight, Code2, Download, Loader, Sparkles, Video } from "lucide-react"
 import React, { useEffect, useRef, useState } from "react"
-
 const math_animation_prompts = {
   "rotating cube": "Create an animation of a red 3D cube rotating along its diagonal axis. Use a smooth rotation and ensure the cube is centered in the frame.",
   "sine wave": "Visualize a sine wave with amplitude 1 and frequency 2, smoothly oscillating over time. Use a continuous line to represent the wave.",
@@ -313,8 +313,10 @@ export default function Home() {
   
 
   return (
+    
     <div className="min-h-screen bg-black text-white font-inter relative overflow-hidden">
       {/* Animated background gradient */}
+      <Analytics />
       <div className="absolute inset-0 bg-gradient-to-br from-violet-900/20 via-black to-indigo-900/20 animate-gradient-shift" />
 
       <div className="relative">
