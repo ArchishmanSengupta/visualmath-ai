@@ -341,7 +341,7 @@ export default function Home() {
           {/* Hero Section */}
           <div className="text-center mb-20">
             <h2 className="text-6xl font-bold mb-6 animate-gradient-text">
-              English to Math Animations
+              Text to Math Animations
             </h2>
             <p className="text-gray-400 text-xl max-w-2xl mx-auto animate-fade-in">
               powered by manim engine + gpt-4o
