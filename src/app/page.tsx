@@ -225,7 +225,7 @@ export default function Home() {
   // }
 
   const showNoMoreApiCallsNow = () =>{
-    setError('Thanks for loving visualmath ai so much. We got 100k+ queries in 24hrs. We have hit API limits, we are now broke');
+    setError('Thanks for loving visualmath ai so much. We got 100k+ queries in 24hrs. We have hit API limits, we are now broke. To fund this project, please contact @archiexzzz on X');
   }
 
   // Main generation function
@@ -447,7 +447,7 @@ export default function Home() {
               <Alert variant="destructive" className="mb-8 bg-red-950/50 border-red-900/50 text-red-300 rounded-xl backdrop-blur-xl">
                 <AlertCircle className="h-5 w-5" />
                 <AlertDescription className="ml-2">{error}</AlertDescription>
-                {error === 'Thanks for loving visualmath ai so much. We got 100k+ queries in 24hrs. We have hit API limits, we are now broke' && (
+                {error === 'Thanks for loving visualmath ai so much. We got 100k+ queries in 24hrs. We have hit API limits, we are now broke. To fund this project, please contact @archiexzzz on X' && (
                   <img src="https://gifdb.com/images/high/al-bundy-i-m-broke-i-have-no-money-qupzb8ixcx6w4xxl.webp" alt="Broke" className="mt-4 rounded-lg" />
                 )}
               </Alert>
