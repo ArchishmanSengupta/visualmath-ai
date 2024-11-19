@@ -2,11 +2,10 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
 import { Analytics } from "@vercel/analytics/react"
-import { AlertCircle, ArrowRight, Code2, Download, Loader, Sparkles, Video } from "lucide-react"
-import React, { useEffect, useRef, useState } from "react"
+import { AlertCircle, ArrowRight, Sparkles } from "lucide-react"
+import { useState } from "react"
 const math_animation_prompts = {
   "rotating cube": "Create an animation of a red 3D cube rotating along its diagonal axis. Use a smooth rotation and ensure the cube is centered in the frame.",
   "sine wave": "Visualize a sine wave with amplitude 1 and frequency 2, smoothly oscillating over time. Use a continuous line to represent the wave.",
@@ -54,261 +53,265 @@ const examplePrompts = Object.entries(math_animation_prompts)
   .sort(() => Math.random() - 0.5)
   .slice(0, 5);
 
-const loadingMessages = [
-    "Crafting mathematical beauty...",
-    "Computing the visualization...",
-    "Bringing math to life...",
-    "Rendering your creation...",
-    "Preparing your animation...",
-    "Processing mathematical concepts..."
-]
+// const loadingMessages = [
+//     "Crafting mathematical beauty...",
+//     "Computing the visualization...",
+//     "Bringing math to life...",
+//     "Rendering your creation...",
+//     "Preparing your animation...",
+//     "Processing mathematical concepts..."
+// ]
 
-interface ProcessStepProps {
-  icon: React.ComponentType<{ className?: string }>
-  title: string
-  description: string
-  isActive: boolean
-  isComplete: boolean
-}
+// interface ProcessStepProps {
+//   icon: React.ComponentType<{ className?: string }>
+//   title: string
+//   description: string
+//   isActive: boolean
+//   isComplete: boolean
+// }
 
-const ProcessStep = ({ icon: Icon, title, description, isActive, isComplete }: ProcessStepProps) => (
-  <div
-    className={`relative flex flex-col items-center p-6 rounded-lg transition-all duration-500 ${
-      isActive ? 'bg-violet-500/10 border border-violet-500/20 scale-110 animate-float' :
-      isComplete ? 'bg-gray-800/20 border border-gray-700 scale-100' :
-      'bg-gray-900/50 border border-gray-800 scale-95'
-    }`}
-  >
-    <div
-      className={`p-3 rounded-full transition-transform duration-300 ${
-        isActive ? 'bg-violet-500 text-white animate-pulse' :
-        isComplete ? 'bg-gray-700 text-gray-300' :
-        'bg-gray-800 text-gray-500'
-      }`}
-    >
-      <Icon className={`h-6 w-6 ${isActive ? 'animate-spin-slow' : ''}`} />
-    </div>
-    <div className="text-center mt-3">
-      <h4
-        className={`font-medium ${
-          isActive ? 'text-violet-400' :
-          isComplete ? 'text-gray-300' :
-          'text-gray-500'
-        }`}
-      >
-        {title}
-      </h4>
-      <p className="text-sm text-gray-500 mt-1">{description}</p>
-    </div>
-  </div>
-)
+// const ProcessStep = ({ icon: Icon, title, description, isActive, isComplete }: ProcessStepProps) => (
+//   <div
+//     className={`relative flex flex-col items-center p-6 rounded-lg transition-all duration-500 ${
+//       isActive ? 'bg-violet-500/10 border border-violet-500/20 scale-110 animate-float' :
+//       isComplete ? 'bg-gray-800/20 border border-gray-700 scale-100' :
+//       'bg-gray-900/50 border border-gray-800 scale-95'
+//     }`}
+//   >
+//     <div
+//       className={`p-3 rounded-full transition-transform duration-300 ${
+//         isActive ? 'bg-violet-500 text-white animate-pulse' :
+//         isComplete ? 'bg-gray-700 text-gray-300' :
+//         'bg-gray-800 text-gray-500'
+//       }`}
+//     >
+//       <Icon className={`h-6 w-6 ${isActive ? 'animate-spin-slow' : ''}`} />
+//     </div>
+//     <div className="text-center mt-3">
+//       <h4
+//         className={`font-medium ${
+//           isActive ? 'text-violet-400' :
+//           isComplete ? 'text-gray-300' :
+//           'text-gray-500'
+//         }`}
+//       >
+//         {title}
+//       </h4>
+//       <p className="text-sm text-gray-500 mt-1">{description}</p>
+//     </div>
+//   </div>
+// )
 
 // Enhanced DottedLine Component
-const DottedLine = ({ active, complete }: { active: boolean; complete: boolean }) => (
-  <div className="h-px w-32 mx-4 relative overflow-hidden">
-    <div className={`h-full w-full ${complete ? 'bg-violet-500' : 'bg-gray-700'}`}>
-      {active && (
-        <>
-          <div className="absolute inset-0 animate-flow">
-            <div className="h-full w-full bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
-          </div>
-          <div className="absolute top-1/2 left-0 w-full">
-            <div className="particle-trail" />
-          </div>
-        </>
-      )}
-    </div>
-  </div>
-)
+// const DottedLine = ({ active, complete }: { active: boolean; complete: boolean }) => (
+//   <div className="h-px w-32 mx-4 relative overflow-hidden">
+//     <div className={`h-full w-full ${complete ? 'bg-violet-500' : 'bg-gray-700'}`}>
+//       {active && (
+//         <>
+//           <div className="absolute inset-0 animate-flow">
+//             <div className="h-full w-full bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
+//           </div>
+//           <div className="absolute top-1/2 left-0 w-full">
+//             <div className="particle-trail" />
+//           </div>
+//         </>
+//       )}
+//     </div>
+//   </div>
+// )
 
-const ProcessingSteps = ({ currentStep, progress }: { currentStep: number, progress: number }) => {
-  return (
-    <div className="flex flex-col items-center space-y-8 w-full">
-      <div className="flex items-center justify-center w-full relative">
-        {/* First Step */}
-        <ProcessStep
-          icon={Code2}
-          title="Creating Script"
-          description="Generating Animation Code"
-          isActive={currentStep === 1}
-          isComplete={currentStep > 1}
-        />
+// const ProcessingSteps = ({ currentStep, progress }: { currentStep: number, progress: number }) => {
+//   return (
+//     <div className="flex flex-col items-center space-y-8 w-full">
+//       <div className="flex items-center justify-center w-full relative">
+//         {/* First Step */}
+//         <ProcessStep
+//           icon={Code2}
+//           title="Creating Script"
+//           description="Generating Animation Code"
+//           isActive={currentStep === 1}
+//           isComplete={currentStep > 1}
+//         />
 
-        {/* Connecting Line with Particles */}
-        <DottedLine
-          active={currentStep === 1}
-          complete={currentStep > 1}
-        />
+//         {/* Connecting Line with Particles */}
+//         <DottedLine
+//           active={currentStep === 1}
+//           complete={currentStep > 1}
+//         />
 
-        {/* Second Step */}
-        <ProcessStep
-          icon={Video}
-          title="Rendering"
-          description="Creating Animation"
-          isActive={currentStep === 2}
-          isComplete={currentStep > 2}
-        />
-      </div>
+//         {/* Second Step */}
+//         <ProcessStep
+//           icon={Video}
+//           title="Rendering"
+//           description="Creating Animation"
+//           isActive={currentStep === 2}
+//           isComplete={currentStep > 2}
+//         />
+//       </div>
 
-      {/* Progress Bar */}
-      <Progress
-        value={progress}
-        className="h-2 w-full max-w-md bg-gray-800/50"
-      />
+//       {/* Progress Bar */}
+//       <Progress
+//         value={progress}
+//         className="h-2 w-full max-w-md bg-gray-800/50"
+//       />
 
-      <style jsx>{`
-        @keyframes particle-flow {
-          0% {
-            transform: translateX(0) translateY(-4px) scale(0);
-            opacity: 0;
-          }
-          50% {
-            transform: translateX(64px) translateY(-4px) scale(1);
-            opacity: 1;
-          }
-          100% {
-            transform: translateX(128px) translateY(-4px) scale(0);
-            opacity: 0;
-          }
-        }
+//       <style jsx>{`
+//         @keyframes particle-flow {
+//           0% {
+//             transform: translateX(0) translateY(-4px) scale(0);
+//             opacity: 0;
+//           }
+//           50% {
+//             transform: translateX(64px) translateY(-4px) scale(1);
+//             opacity: 1;
+//           }
+//           100% {
+//             transform: translateX(128px) translateY(-4px) scale(0);
+//             opacity: 0;
+//           }
+//         }
 
-        @keyframes flow-line {
-          0% {
-            transform: translateX(-50%);
-          }
-          100% {
-            transform: translateX(0%);
-          }
-        }
+//         @keyframes flow-line {
+//           0% {
+//             transform: translateX(-50%);
+//           }
+//           100% {
+//             transform: translateX(0%);
+//           }
+//         }
 
-        .animate-flow-line {
-          animation: flow-line 1s linear infinite;
-        }
-      `}</style>
-    </div>
-  );
-};
+//         .animate-flow-line {
+//           animation: flow-line 1s linear infinite;
+//         }
+//       `}</style>
+//     </div>
+//   );
+// };
 
 export default function Home() {
   const [prompt, setPrompt] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [currentStep, setCurrentStep] = useState(0)
-  const [progress, setProgress] = useState(0)
+  // const [loading, setLoading] = useState(false)
+  // const [currentStep, setCurrentStep] = useState(0)
+  // const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [videoUrl, setVideoUrl] = useState<string | null>(null)
-  const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0])
-  const videoRef = useRef(null)
+  // const [videoUrl, setVideoUrl] = useState<string | null>(null)
+  // const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0])
+  // const videoRef = useRef(null)
 
-  useEffect(() => {
-    let messageInterval: NodeJS.Timeout
-    if (loading) {
-      let messageIndex = 0
-      messageInterval = setInterval(() => {
-        messageIndex = (messageIndex + 1) % loadingMessages.length
-        setLoadingMessage(loadingMessages[messageIndex])
-      }, 10000)
-    }
-    return () => clearInterval(messageInterval)
-  }, [loading])
+  // useEffect(() => {
+  //   let messageInterval: NodeJS.Timeout
+  //   if (loading) {
+  //     let messageIndex = 0
+  //     messageInterval = setInterval(() => {
+  //       messageIndex = (messageIndex + 1) % loadingMessages.length
+  //       setLoadingMessage(loadingMessages[messageIndex])
+  //     }, 10000)
+  //   }
+  //   return () => clearInterval(messageInterval)
+  // }, [loading])
 
-  const simulateProgress = (step: number) => {
-    setProgress(0)
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          return 100
-        }
-        return prev + Math.random() * 3
-      })
-    }, step === 1 ? 50 : 70)
-    return interval
+  // const simulateProgress = (step: number) => {
+  //   setProgress(0)
+  //   const interval = setInterval(() => {
+  //     setProgress(prev => {
+  //       if (prev >= 100) {
+  //         clearInterval(interval)
+  //         return 100
+  //       }
+  //       return prev + Math.random() * 3
+  //     })
+  //   }, step === 1 ? 50 : 70)
+  //   return interval
+  // }
+
+  const showNoMoreApiCallsNow = () =>{
+    setError('Thanks for loving visualmath ai so much. We got 100k+ queries in 24hrs. We have hit API limits, we are now broke');
   }
 
   // Main generation function
-  const generateAnimation = async () => {
-    setLoading(true);
-    setCurrentStep(1);
-    setError(null);
-    setVideoUrl(null);
+  // const generateAnimation = async () => {
+  //   setLoading(true);
+  //   setCurrentStep(1);
+  //   setError(null);
+  //   setVideoUrl(null);
   
-    const codeInterval = simulateProgress(1);
+  //   const codeInterval = simulateProgress(1);
   
-    const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Request timed out')), 300000)
-    );
+  //   const timeout = new Promise((_, reject) =>
+  //     setTimeout(() => reject(new Error('Request timed out')), 300000)
+  //   );
   
-    try {
-      // Prepare the prompt
-      const firstPrompt =
-        "Generate detailed and extensive Manim code based on the following user query. Do not include any comments or explanations in the code. User query: ";
-      const modifiedPrompt = firstPrompt + prompt;
+  //   try {
+  //     // Prepare the prompt
+  //     const firstPrompt =
+  //       "Generate detailed and extensive Manim code based on the following user query. Do not include any comments or explanations in the code. User query: ";
+  //     const modifiedPrompt = firstPrompt + prompt;
   
-      // First API call to generate code
-      const codeResponse = await Promise.race([
-        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/code/generation`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: modifiedPrompt, model: 'gpt-4o' }),
-        }),
-        timeout,
-      ]) as Response;
+  //     // First API call to generate code
+  //     const codeResponse = await Promise.race([
+  //       fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/code/generation`, {
+  //         method: 'POST',
+  //         headers: { 'Content-Type': 'application/json' },
+  //         body: JSON.stringify({ prompt: modifiedPrompt, model: 'gpt-4o' }),
+  //       }),
+  //       timeout,
+  //     ]) as Response;
   
-      if (!codeResponse.ok) {
-        throw new Error('Failed to generate code. Please try again.');
-      }
+  //     if (!codeResponse.ok) {
+  //       throw new Error('Failed to generate code. Please try again.');
+  //     }
   
-      clearInterval(codeInterval);
-      setProgress(100);
+  //     clearInterval(codeInterval);
+  //     setProgress(100);
   
-      const codeData = await codeResponse.json();
-      const pythonCode = codeData.code.replace(/```python|```/g, '').trim();
+  //     const codeData = await codeResponse.json();
+  //     const pythonCode = codeData.code.replace(/```python|```/g, '').trim();
   
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay for UX
+  //     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay for UX
   
-      setCurrentStep(2);
-      setProgress(0);
-      const videoInterval = simulateProgress(2);
+  //     setCurrentStep(2);
+  //     setProgress(0);
+  //     const videoInterval = simulateProgress(2);
   
-      // Second API call to render video
-      const renderResponse = await Promise.race([
-        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/video/rendering`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code: pythonCode,
-            file_name: 'GenScene.py',
-            file_class: 'GenScene',
-            iteration: 585337 + Math.floor(Math.random() * 1000),
-            project_name: 'GenScene',
-          }),
-        }),
-        timeout,
-      ]) as Response;
+  //     // Second API call to render video
+  //     const renderResponse = await Promise.race([
+  //       fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/video/rendering`, {
+  //         method: 'POST',
+  //         headers: { 'Content-Type': 'application/json' },
+  //         body: JSON.stringify({
+  //           code: pythonCode,
+  //           file_name: 'GenScene.py',
+  //           file_class: 'GenScene',
+  //           iteration: 585337 + Math.floor(Math.random() * 1000),
+  //           project_name: 'GenScene',
+  //         }),
+  //       }),
+  //       timeout,
+  //     ]) as Response;
   
-      if (!renderResponse.ok) {
-        throw new Error('Failed to render video. Please try again.');
-      }
+  //     if (!renderResponse.ok) {
+  //       throw new Error('Failed to render video. Please try again.');
+  //     }
   
-      const renderData = await renderResponse.json();
+  //     const renderData = await renderResponse.json();
   
-      if (!renderData.video_url) {
-        throw new Error('No video URL received from the server.');
-      }
+  //     if (!renderData.video_url) {
+  //       throw new Error('No video URL received from the server.');
+  //     }
   
-      clearInterval(videoInterval);
-      setProgress(100);
-      setVideoUrl(renderData.video_url);
-    } catch (err) {
-      if (err instanceof Error && err.message === 'Request timed out') {
-        setError('Thanks for loving visualmath ai so much. We got 90k+ queries in 24hrs. We have hit API limits, we are now broke');
-      } else {
-        setError(err instanceof Error ? err.message : 'An unexpected error occurred');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     clearInterval(videoInterval);
+  //     setProgress(100);
+  //     setVideoUrl(renderData.video_url);
+  //   } catch (err) {
+  //     if (err instanceof Error && err.message === 'Request timed out') {
+  //       setError('Thanks for loving visualmath ai so much. We got 100k++ queries in 24hrs. We have hit API limits, we are now broke');
+  //     } else {
+  //       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+  //     }
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   
   
 
@@ -374,38 +377,38 @@ export default function Home() {
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Describe the mathematical concept you want to visualize..."
                 className="bg-gray-800/50 border border-gray-700 text-white placeholder-gray-500 mb-6 p-4 rounded-xl min-h-[120px] resize-none focus:ring-2 focus:ring-violet-500 transition-all duration-200 text-lg"
-                disabled={loading}
+                // disabled={loading}
               />
               <Button
-                onClick={generateAnimation}
-                disabled={loading || !prompt}
+                onClick={showNoMoreApiCallsNow}
+                // disabled={loading || !prompt}
                 className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-6 rounded-xl transition-all duration-200 text-lg font-medium hover:scale-[1.02]"
               >
-                {loading ? (
+                {/* {loading ? (
                 <div className="flex items-center justify-center gap-3">
                   <Loader className="h-5 w-5 animate-spin" />
                   <span>{loadingMessage}</span>
                 </div>
-                ) : (
+                ) : ( */}
                 <div className="flex items-center justify-center gap-3">
                   <span>Generate Animation</span>
                   <ArrowRight className="h-5 w-5" />
                 </div>
-                )}
+                {/* )} */}
               </Button>
               </CardContent>
             </Card>
 
             {/* Processing Steps */}
-            {loading && (
+            {/* {loading && (
               <div className="flex flex-col items-center space-y-8 mb-16 animate-fadeIn">
                 <ProcessingSteps
                   currentStep={currentStep}
                   progress={progress}
                 />
               </div>
-            )}
-            {videoUrl && !loading && (
+            )} */}
+            {/* {videoUrl && !loading && (
               <div className="animate-fadeIn">
                 <Card className="bg-gray-900/70 backdrop-blur-lg border-gray-700 rounded-3xl overflow-hidden shadow-2xl mb-12 p-4 max-w-lg mx-auto">
                   <CardContent className="text-center space-y-8">
@@ -436,7 +439,7 @@ export default function Home() {
                   </CardContent>
                 </Card>
               </div>
-            )}
+            )} */}
 
 
             {/* Error Alert */}
@@ -444,7 +447,7 @@ export default function Home() {
               <Alert variant="destructive" className="mb-8 bg-red-950/50 border-red-900/50 text-red-300 rounded-xl backdrop-blur-xl">
                 <AlertCircle className="h-5 w-5" />
                 <AlertDescription className="ml-2">{error}</AlertDescription>
-                {error === 'Thanks for loving visualmath ai so much. We got 4500+ queries in 2hrs. We have hit API limits, we are now broke' && (
+                {error === 'Thanks for loving visualmath ai so much. We got 100k+ queries in 24hrs. We have hit API limits, we are now broke' && (
                   <img src="https://gifdb.com/images/high/al-bundy-i-m-broke-i-have-no-money-qupzb8ixcx6w4xxl.webp" alt="Broke" className="mt-4 rounded-lg" />
                 )}
               </Alert>
