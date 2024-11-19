@@ -301,7 +301,7 @@ export default function Home() {
       setVideoUrl(renderData.video_url);
     } catch (err) {
       if (err instanceof Error && err.message === 'Request timed out') {
-        setError('Thanks for loving visualmath ai so much. We got 4500+ queries in 2hrs. We have hit API limits, we are now broke');
+        setError('Thanks for loving visualmath ai so much. We got 90k+ queries in 24hrs. We have hit API limits, we are now broke');
       } else {
         setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       }
